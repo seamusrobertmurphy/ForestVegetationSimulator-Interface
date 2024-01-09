@@ -1,0 +1,108 @@
+---
+title: "Linux Install of FVS using r-base & bash"
+subtitle: "Forest Veg Simulator on Ubuntu20.04.6 LTS & R4.3.2"
+output: github_document
+date: "`r Sys.Date()`"
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, styler::tidyverse_style())
+setwd("~/Desktop/git_repos/FVS-packages")
+```
+
+-   These instructions were copied from open-fvs' source-forge pages found [here](https://sourceforge.net/p/open-fvs/wiki/browse_pages/).
+
+-   Package installation files, builds, docs, installs were cloned from USFS's github repo [here](https://github.com/USDAForestService/ForestVegetationSimulator-Interface) and renamed as `FVS-packages`. This provided simpler install for Ubuntu 20.04 system than the svn downloads linked on the source-forge pages.
+
+-   Shared libraries of FVS functions and settings were cloned from USFS's github repo [here](https://github.com/USDAForestService/ForestVegetationSimulator.git) and renamed as `FVS-libraries`.
+
+-   For succesful r-base deploy on Ubuntu, make sure to assign 'UTF-8' format by saving this markdown as script.R file inside the `FVS-packages` directory using the 'Save as' function from inside your IDE and following formatting prompt.
+
+-   For reference, this linux environment and R-session info are posted following package installation below.
+
+```{r, warning=FALSE}
+list.of.packages <- c(
+  "devtools", "shiny", "Cairo", "rhandsontable",
+  "ggplot2", "parallel", "RSQLite", "plyr",
+  "dplyr", "colourpicker", "rgl", "leaflet",
+  "zip", "openxlsx", "rgdal", "nlme"
+)
+
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+if (length(new.packages)) install.packages(new.packages)
+
+update.packages(ask = FALSE, checkBuilt = TRUE)
+devtools::session_info()
+capabilities()
+```
+
+# **Build from Bash Terminal**
+
+##### **Download docs, builds and installation files**
+
+Change directory into preferred folder. Cloned github repo including fvsOL and rFVS packages build files and renamed folder `ForestVegetationSimulator-Interface` as `FVS-packages`. This `FVS-packages` folder will is the top level or trunk from where to run all installs. Uncomment as necessary below.
+
+```{bash, eval}
+#cd ~/Desktop/git_repos
+#git clone https://github.com/USDAForestService/ForestVegetationSimulator-Interface.git
+#mv ForestVegetationSimulator-Interface FVS-packages
+cd ~/Desktop/git_repos/FVS-packages
+ls
+```
+
+##### **Download shared libraries of FVS package functions**
+
+Note: this `FVS-libraries` repo includes the 'FVSbin' folder referenced in source-forge launch instructions.
+
+```{bash}
+#cd ~/Desktop/git_repos
+#git clone https://github.com/USDAForestService/ForestVegetationSimulator.git
+#mv ForestVegetationSimulator FVS-libraries
+cd ~/Desktop/git_repos/FVS-libraries
+ls
+```
+
+##### Compile build files using `makefile` found in sub-directory of downloaded repo
+
+```{bash}
+make -v # check make version for updates
+cd ~/Desktop/git_repos/FVS-packages/fvsOL
+make
+```
+
+##### **Build `fvsOL` installation from R scripts**
+
+If running terminal from RStudio or inside .Rmd chunk, working directory must be set to trunk location, i.e. `setwd("~/Desktop/git_repos/FVS-packages"` . Alternatively, open the full script file and hit 'Run All'.
+
+```{r, eval=FALSE, echo=TRUE}
+source("fvsOL/parms/mkpkeys.R", local = knitr::knit_global())
+sys.source("fvsOL/inst/extdata/mkhelp.R", envir = knitr::knit_global()) 
+```
+
+##### **Build** devtools installation files
+
+```{r, eval=FALSE}
+Rscript --default-packages=devtools -e "devtools::document(pkg='fvsOL')" 
+Rscript --default-packages=devtools -e "devtools::build(pkg='fvsOL')" 
+Rscript --default-packages=devtools -e "devtools::install(pkg='fvsOL',type='source',repos=NULL)"
+```
+
+##### **Build `rFVS` installation from make files and scripts as above**
+
+```{r, eval=FALSE}
+cd ~/Desktop/git_repos/FVS-packages/rFVS
+make
+Rscript --default-packages=devtools -e "devtools::document(pkg='rFVS')" 
+Rscript --default-packages=devtools -e "devtools::build(pkg='rFVS')" 
+Rscript --default-packages=devtools -e "devtools::install(pkg='rFVS',type='source',repos=NULL)"
+
+```
+
+##### Assign location of `FVS-libraries` and launch Forest Vegetation Simulator in browser
+
+Change folder path of shared libraries to location of downloaded repository originally called \`ForestVegetationSimulator' and now renamed as 'FVS-libraries'.
+
+```{r, eval=FALSE}
+R -e "require(fvsOL);fvsOL(fvsBin='~/Desktop/git_repos/FVS-libraries/bin')"
+```
+
+![Deployed using chromium-based browser](deploy-screenshot.png)
